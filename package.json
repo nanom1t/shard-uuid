@@ -1,0 +1,29 @@
+{
+  "name": "shard-uuid",
+  "version": "1.0.0",
+  "description": "UUID generator for database shards",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nanom1t/shard-uuid.git"
+  },
+  "keywords": [
+    "uuid",
+    "shards"
+  ],
+  "author": "nanom1t",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nanom1t/shard-uuid/issues"
+  },
+  "homepage": "https://github.com/nanom1t/shard-uuid",
+  "gypfile": true,
+  "dependencies": {
+    "long": "^3.2.0",
+    "nan": "^2.7.0"
+  }
+}
