@@ -15,49 +15,67 @@ using Nan::Set;
 #define EPOCH 1483228800L // 2017-01-01 00:00:00
 
 typedef unsigned long long UINT64;
-typedef unsigned long UINT32;
 
-UINT64 getTime() {
+UINT64 getTimestamp() {
     auto now = std::chrono::system_clock::now().time_since_epoch().count() / 1000;
     UINT64 time = (UINT64)(now / 1000);
 
     return time;
 }
 
-UINT64 getShardId() {
-    return sizeof(UINT64);
+UINT64 getTime(UINT64 uuid) {
+    return 0;
 }
 
-UINT64 getLocalId() {
-    return getTime() - EPOCH;
+UINT64 getShardId(UINT64 uuid) {
+    return 0;
 }
 
-UINT64 getUUID(UINT32 shardId, UINT32 localId) {
-    UINT64 id = 0;//getTime();// << (64-41);
+UINT64 getLocalId(UINT64 uuid) {
+    return 0;
+}
 
-    // aditional number (13 bit : 0~8191) - use microseconds if not exist
-    //id |= (additional != 0 ? additional : now % 1000) << (64-41-13);
+UINT64 getUUID(UINT64 shardId, UINT64 localId, bool timestamp) {
+    UINT64 uuid = 0;
 
-    // counter number (10 bit : 0~1023)
-    //id |= counter % 1024;
+    // append timestamp (32 bits)
+    if (timestamp) {
+        uuid |= (getTimestamp() - EPOCH) << 32;
+    }
 
-    return id;
+    // append shard id (22 bits)
+    uuid |= shardId << 10;
+
+    // append local id (10 bits)
+    uuid |= localId % 1024;
+
+    return uuid;
 }
 
 /**
  * Method wrapping for node export
  */
-
 NAN_METHOD(GetUUID) {
-    UINT64 uuid = getUUID(0, 0);
+    if (info.Length() < 3 || !info[0]->IsNumber() || !info[1]->IsNumber() || !info[2]->IsBoolean()) {
+        return;
+    }
 
-    // pass it to buffer
+    int shardId = (int) info[0]->NumberValue();
+    int localId = (int) info[1]->NumberValue();
+    bool timestamp = (bool) info[2]->BooleanValue();
+
+    UINT64 uuid = getUUID(shardId, localId, timestamp);
+
     auto buffer = CopyBuffer((char*)(&uuid), 8);
     info.GetReturnValue().Set(buffer.ToLocalChecked());
 }
 
 NAN_METHOD(GetTime) {
-    UINT64 time = getTime();
+    if (info.Length() < 1 || !info[0]->IsNumber()) {
+        return;
+    }
+
+    UINT64 time = getTime(0);
 
     // pass it to buffer
     auto buffer = CopyBuffer((char*)(&time), 8);
@@ -65,7 +83,11 @@ NAN_METHOD(GetTime) {
 }
 
 NAN_METHOD(GetShardId) {
-    UINT64 shardId = getShardId();
+    if (info.Length() < 1 || !info[0]->IsNumber()) {
+        return;
+    }
+
+    UINT64 shardId = getShardId(0);
 
     // pass it to buffer
     auto buffer = CopyBuffer((char*)(&shardId), 8);
@@ -73,7 +95,11 @@ NAN_METHOD(GetShardId) {
 }
 
 NAN_METHOD(GetLocalId) {
-    UINT64 localId = getLocalId();
+    if (info.Length() < 1 || !info[0]->IsNumber()) {
+        return;
+    }
+
+    UINT64 localId = getLocalId(0);
 
     // pass it to buffer
     auto buffer = CopyBuffer((char*)(&localId), 8);
