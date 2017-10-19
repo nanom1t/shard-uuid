@@ -4,7 +4,7 @@
   "description": "UUID generator for database shards",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha test",
     "build": "node-gyp rebuild"
   },
   "repository": {
@@ -26,5 +26,9 @@
     "long": "^3.2.0",
     "nan": "^2.7.0",
     "node-gyp": "^3.6.2"
+  },
+  "devDependencies": {
+    "mocha": "^4.0.1",
+    "should": "^13.1.2"
   }
 }
