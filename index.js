@@ -12,21 +12,94 @@ const Long = require('long');
  * @param buffer
  * @returns {Long|undefined}
  */
-function toLong (buffer) {
+function bufferToLong (buffer) {
     return buffer ? new Long(buffer.readInt32LE(0), buffer.readInt32LE(4), true) : undefined;
 }
 
-//let uuid = Long.fromString('18446744073709551615', true);
-let uuid = toLong(shardUUID.GetUUID(0, 3, true));
-let time = toLong(shardUUID.GetTime(uuid.toString()));
-let shardId = toLong(shardUUID.GetShardId(uuid.toString()));
-let localId = toLong(shardUUID.GetLocalId(uuid.toString()));
-
-console.log('UUID: ' + uuid.toString());
-console.log('Time: ' + time.toString());
-console.log('ShardId: ' + shardId.toString());
-console.log('LocalId: ' + localId.toString());
-
 module.exports = {
+    /**
+     * Generate UUID
+     * @param shardId
+     * @param localId
+     * @param timestamp
+     * @returns {Promise}
+     */
+    getUUID (shardId, localId, timestamp) {
+        return new Promise((resolve, reject) => {
+            let buffer = shardUUID.GetUUID(shardId, localId, timestamp);
+            if (buffer) {
+                let uuid = bufferToLong(buffer);
+                if (uuid && Long.isLong(uuid)) {
+                    resolve(uuid.toString());
+                } else {
+                    reject(new Error('UUID error: buffer conversion'));
+                }
+            } else {
+                reject(new Error('UUID error: empty buffer'));
+            }
+        });
+    },
 
+    /**
+     * Get time from UUID
+     * @param uuid
+     * @returns {Promise}
+     */
+    getTime (uuid) {
+        return new Promise((resolve, reject) => {
+            let buffer = shardUUID.GetTime(uuid);
+            if (buffer) {
+                let time = bufferToLong(buffer);
+                if (time && Long.isLong(time)) {
+                    resolve(time.toString());
+                } else {
+                    reject(new Error('UUID error: buffer conversion'));
+                }
+            } else {
+                reject(new Error('UUID error: empty buffer'));
+            }
+        });
+    },
+
+    /**
+     * Get shard id from UUID
+     * @param uuid
+     * @returns {Promise}
+     */
+    getShardId (uuid) {
+        return new Promise((resolve, reject) => {
+            let buffer = shardUUID.GetShardId(uuid);
+            if (buffer) {
+                let shardId = bufferToLong(buffer);
+                if (shardId && Long.isLong(shardId)) {
+                    resolve(shardId.toString());
+                } else {
+                    reject(new Error('UUID error: buffer conversion'));
+                }
+            } else {
+                reject(new Error('UUID error: empty buffer'));
+            }
+        });
+    },
+
+    /**
+     * Get local id from UUID
+     * @param uuid
+     * @returns {Promise}
+     */
+    getLocalId (uuid) {
+        return new Promise((resolve, reject) => {
+            let buffer = shardUUID.GetLocalId(uuid);
+            if (buffer) {
+                let localId = bufferToLong(buffer);
+                if (localId && Long.isLong(localId)) {
+                    resolve(localId.toString());
+                } else {
+                    reject(new Error('UUID error: buffer conversion'));
+                }
+            } else {
+                reject(new Error('UUID error: empty buffer'));
+            }
+        });
+    }
 };
