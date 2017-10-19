@@ -1,48 +1,49 @@
 /**
  * Shard UUID generator
  */
-#include <chrono>
 #include <v8.h>
 #include <nan.h>
 #include <cstdlib>
+#include <chrono>
 
+using v8::FunctionCallbackInfo;
+using v8::Isolate;
+using v8::Local;
+using v8::Object;
 using v8::String;
-using v8::FunctionTemplate;
-using Nan::GetFunction;
+using v8::Value;
+using v8::Number;
+using v8::Exception;
 using Nan::CopyBuffer;
-using Nan::New;
-using Nan::Set;
 
 #define EPOCH 1483228800L // 2017-01-01 00:00:00
 
 typedef unsigned long long UINT64;
 typedef unsigned int UINT32;
 
-UINT64 getTimestamp() {
+UINT64 GetTimestamp() {
     auto now = std::chrono::system_clock::now().time_since_epoch().count() / 1000;
     UINT64 timestamp = (UINT64)(now / 1000);
 
     return timestamp;
 }
 
-UINT32 getTime(UINT64 uuid) {
-    return (uuid >> 32) & 0xFFFFFFFF;
-}
+void GetUUID(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
 
-UINT32 getShardId(UINT64 uuid) {
-    return (uuid >> 10) & 0x3FFFFF;
-}
+    if (args.Length() < 3 || !args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsBoolean()) {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Invalid params")));
+        return;
+    }
 
-UINT32 getLocalId(UINT64 uuid) {
-    return uuid & 0x3FF;
-}
-
-UINT64 getUUID(UINT32 shardId, UINT32 localId, bool timestamp) {
+    UINT32 shardId = (UINT32) args[0]->Uint32Value();
+    UINT32 localId = (UINT32) args[1]->Uint32Value();
+    bool timestamp = (bool) args[2]->BooleanValue();
     UINT64 uuid = 0;
 
     // append timestamp (32 bits)
     if (timestamp) {
-        uuid |= (getTimestamp() - EPOCH) << 32;
+        uuid |= (GetTimestamp() - EPOCH) << 32;
     }
 
     // append shard id (22 bits)
@@ -51,77 +52,82 @@ UINT64 getUUID(UINT32 shardId, UINT32 localId, bool timestamp) {
     // append local id (10 bits)
     uuid |= localId % 1024;
 
-    return uuid;
-}
-
-/**
- * Method wrapping for node export
- */
-NAN_METHOD(GetUUID) {
-    if (info.Length() < 3 || !info[0]->IsNumber() || !info[1]->IsNumber() || !info[2]->IsBoolean()) {
-        return;
-    }
-
-    UINT32 shardId = (UINT32) info[0]->Uint32Value();
-    UINT32 localId = (UINT32) info[1]->Uint32Value();
-    bool timestamp = (bool) info[2]->BooleanValue();
-
-    UINT64 uuid = getUUID(shardId, localId, timestamp);
-
     auto buffer = CopyBuffer((char*)(&uuid), 8);
-    info.GetReturnValue().Set(buffer.ToLocalChecked());
+    args.GetReturnValue().Set(buffer.ToLocalChecked());
 }
 
-NAN_METHOD(GetTime) {
-    if (info.Length() < 1 || !info[0]->IsString()) {
+void GetTime(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+
+    if (args.Length() < 1 || !args[0]->IsString()) {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Invalid UUID")));
         return;
     }
 
-    String::Utf8Value uuidString(info[0]);
+    String::Utf8Value uuidString(args[0]);
     UINT64 uuid = std::strtoull(*uuidString, NULL, 0);
-    UINT64 time = getTime(uuid);
+    Local<Number> time = Number::New(isolate, ((uuid >> 32) & 0xFFFFFFFF));
 
-    // pass it to buffer
-    auto buffer = CopyBuffer((char*)(&time), 8);
-    info.GetReturnValue().Set(buffer.ToLocalChecked());
+    args.GetReturnValue().Set(time);
 }
 
-NAN_METHOD(GetShardId) {
-    if (info.Length() < 1 || !info[0]->IsString()) {
+void GetShardId(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+
+    if (args.Length() < 1 || !args[0]->IsString()) {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Invalid UUID")));
         return;
     }
 
-    String::Utf8Value uuidString(info[0]);
+    String::Utf8Value uuidString(args[0]);
     UINT64 uuid = std::strtoull(*uuidString, NULL, 0);
-    UINT64 shardId = getShardId(uuid);
+    Local<Number> shardId = Number::New(isolate, ((uuid >> 10) & 0x3FFFFF));
 
-    // pass it to buffer
-    auto buffer = CopyBuffer((char*)(&shardId), 8);
-    info.GetReturnValue().Set(buffer.ToLocalChecked());
+    args.GetReturnValue().Set(shardId);
 }
 
-NAN_METHOD(GetLocalId) {
-    if (info.Length() < 1 || !info[0]->IsString()) {
+void GetLocalId(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+
+    if (args.Length() < 1 || !args[0]->IsString()) {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Invalid UUID")));
         return;
     }
 
-    String::Utf8Value uuidString(info[0]);
+    String::Utf8Value uuidString(args[0]);
     UINT64 uuid = std::strtoull(*uuidString, NULL, 0);
-    UINT64 localId = getLocalId(uuid);
+    Local<Number> localId = Number::New(isolate, (uuid & 0x3FF));
 
-    // pass it to buffer
-    auto buffer = CopyBuffer((char*)(&localId), 8);
-    info.GetReturnValue().Set(buffer.ToLocalChecked());
+    args.GetReturnValue().Set(localId);
+}
+
+void GetInfo(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+
+    if (args.Length() < 1 || !args[0]->IsString()) {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Invalid UUID")));
+        return;
+    }
+
+    String::Utf8Value uuidString(args[0]);
+    UINT64 uuid = std::strtoull(*uuidString, NULL, 0);
+    Local<Object> info = Object::New(isolate);
+    info->Set(String::NewFromUtf8(isolate, "time"), Number::New(isolate, (uuid >> 32) & 0xFFFFFFFF));
+    info->Set(String::NewFromUtf8(isolate, "shardId"), Number::New(isolate, (uuid >> 10) & 0x3FFFFF));
+    info->Set(String::NewFromUtf8(isolate, "localId"), Number::New(isolate, (uuid & 0x3FF)));
+
+    args.GetReturnValue().Set(info);
 }
 
 /**
  * Initialize node module
  */
-NAN_MODULE_INIT(Initialize) {
-    NAN_EXPORT(target, GetUUID);
-    NAN_EXPORT(target, GetTime);
-    NAN_EXPORT(target, GetShardId);
-    NAN_EXPORT(target, GetLocalId);
+void init(Local<Object> exports) {
+    NODE_SET_METHOD(exports, "getUUID", GetUUID);
+    NODE_SET_METHOD(exports, "getTime", GetTime);
+    NODE_SET_METHOD(exports, "getShardId", GetShardId);
+    NODE_SET_METHOD(exports, "getLocalId", GetLocalId);
+    NODE_SET_METHOD(exports, "getInfo", GetInfo);
 }
 
-NODE_MODULE(shard_uuid, Initialize);
+NODE_MODULE(shard_uuid, init)
