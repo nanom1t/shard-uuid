@@ -23,6 +23,7 @@
   "homepage": "https://github.com/nanom1t/shard-uuid",
   "gypfile": true,
   "dependencies": {
+    "is_js": "^0.9.0",
     "long": "^3.2.0",
     "nan": "^2.7.0",
     "node-gyp": "^3.6.2"

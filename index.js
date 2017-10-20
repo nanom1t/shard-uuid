@@ -2,6 +2,7 @@
 
 const shardUUID = require('./build/Release/shard-uuid.node');
 const Long = require('long');
+const is = require('is_js');
 
 /**
  * UUID (64bits) = timestamp (32 bits) | shardId (22 bits) | localId (10 bits)
@@ -27,9 +28,9 @@ module.exports = {
     getUUID (shardId, localId, timestamp) {
         return new Promise((resolve, reject) => {
             let buffer = shardUUID.getUUID(shardId, localId, timestamp);
-            if (buffer) {
+            if (is.existy(buffer)) {
                 let uuid = bufferToLong(buffer);
-                if (uuid && Long.isLong(uuid)) {
+                if (is.existy(uuid) && Long.isLong(uuid)) {
                     resolve(uuid.toString());
                 } else {
                     reject(new Error('UUID error: buffer conversion'));
@@ -48,10 +49,10 @@ module.exports = {
     getTime (uuid) {
         return new Promise((resolve, reject) => {
             let time = shardUUID.getTime(uuid);
-            if (time) {
+            if (is.existy(time) && is.number(time)) {
                 resolve(time);
             } else {
-                reject(new Error('UUID error: time is undefined'));
+                reject(new Error('UUID error: invalid time'));
             }
         });
     },
@@ -64,10 +65,10 @@ module.exports = {
     getShardId (uuid) {
         return new Promise((resolve, reject) => {
             let shardId = shardUUID.getShardId(uuid);
-            if (shardId) {
+            if (is.existy(shardId) && is.number(shardId)) {
                 resolve(shardId);
             } else {
-                reject(new Error('UUID error: shard id is undefined'));
+                reject(new Error('UUID error: invalid shard id'));
             }
         });
     },
@@ -80,10 +81,10 @@ module.exports = {
     getLocalId (uuid) {
         return new Promise((resolve, reject) => {
             let localId = shardUUID.getLocalId(uuid);
-            if (localId) {
+            if (is.existy(localId) && is.number(localId)) {
                 resolve(localId);
             } else {
-                reject(new Error('UUID error: local id is undefined'));
+                reject(new Error('UUID error: invalid local id'));
             }
         });
     },
@@ -91,7 +92,7 @@ module.exports = {
     getInfo (uuid) {
         return new Promise((resolve, reject) => {
             let info = shardUUID.getInfo(uuid);
-            if (info) {
+            if (is.existy(info) && is.object(info)) {
                 resolve(info);
             } else {
                 reject(new Error('UUID error: invalid info'));
